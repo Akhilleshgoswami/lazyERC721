@@ -154,7 +154,7 @@ contract Mytoken is ERC721, Ownable {
     ) internal view returns (address) {
         bytes32 messagehash = keccak256(
             //in production _url is going to change with contract address
-            abi.encodePacked(_url)
+            abi.encodePacked(address(this),_url)
         );
         // getting the signer eth address.
         address signer = messagehash.toEthSignedMessageHash().recover(
