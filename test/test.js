@@ -6,9 +6,8 @@ contract("MYToken", ([deployer, author, tipper]) => {
 
   before(async () => {
     //Mytoken = await myToken.deployed();
-    Mytoken = await myToken.at("0xcbF8f3572ee696b35a1824b92848b4C122981b87");
+    Mytoken = await myToken.at("0x0E41115Aedc85c40d9fbc2267f4181FBce845fA3");
   });
-
   describe("deployment", async () => {
     it("deploys successfully", async () => {
       const address = await Mytoken.address;
@@ -17,10 +16,10 @@ contract("MYToken", ([deployer, author, tipper]) => {
       assert.notEqual(address, "");
       assert.notEqual(address, null);
       assert.notEqual(address, undefined);
-      assert.equal(address, "0xcbF8f3572ee696b35a1824b92848b4C122981b87");
+      assert.equal(address, "0x0E41115Aedc85c40d9fbc2267f4181FBce845fA3");
     });
     const sign =
-      "0x59b2045f74961a571d95e5f782434d5cd42900da99f9d9a12cefa8d8e04adc41014325cecd832993148b47f058db32e0e9c7c2ea4d51c14a5cf82cb74080d5e01b";
+      "0xe6904485d9ec60855fd63164d1f6886964f66cbc6411818009f66bf76715f44971269c05cb44f08b4ad87e804e023653a343e8ed70e6c4258e46e3725f21f4d61b";
     it("singer wallte address", async () => {
       const address = await Mytoken.check(sign, "Akhilesh");
       assert.notEqual(address, 0x0);
@@ -31,37 +30,55 @@ contract("MYToken", ([deployer, author, tipper]) => {
     });
 
     it("Mint NFT", async () => {
-      const event = await Mytoken.buyToken(
-        "0xF995CE1B760148F531c86AadCED893d6dB0Ef5C0",
+      let event = await Mytoken.buyLazyToken(
+        "0x98978D41Ffbd3cBaA517ef6A3b4C7ebDc005158A",
         12,
-        "Akhilesh",
+        "",
         sign,
         { from: author, value: 13 }
       );
     });
+    it("when price is 0 ", async () => {
+      const event = await Mytoken.buyLazyToken(
+        "0xF995CE1B760148F531c86AadCED893d6dB0Ef5C0",
+        0,
+        "Akhilesh",
+        sign,
+        { from: author, value: 13 }
+      ).should.be.rejected;
+    });
+    it("when value is 0", async () => {
+      const event = await Mytoken.buyLazyToken(
+        "0xF995CE1B760148F531c86AadCED893d6dB0Ef5C0",
+        10,
+        "Akhilesh",
+        sign,
+        { from: author, value: 0 }
+      ).should.be.rejected;
+    });
+
     it("get Token URI", async () => {
       let TokenURI = await Mytoken.tokenURI(1);
       console.log(TokenURI);
-      TokenURI = await Mytoken.tokenURI(9).should.be.rejected;
+      TokenURI = await Mytoken.tokenURI(19).should.be.rejected;
     });
     it("owner of token", async () => {
       const owner = await Mytoken.balanceOf(
-        "0xf995ce1b760148f531c86aadced893d6db0ef5c0"
+        "0x98978D41Ffbd3cBaA517ef6A3b4C7ebDc005158A"
       );
+      console.log(owner.toNumber());
       let Tokenowner = await Mytoken.ownerOf(1);
 
       console.log(Tokenowner);
-      Tokenowner = await Mytoken.ownerOf(10).should.rejected;
+      Tokenowner = await Mytoken.ownerOf(199).should.rejected;
     });
     it("direct mint", async () => {
-      const owner = await Mytoken.mintToken(
-        "ak",
-        "0xf995ce1b760148f531c86aadced893d6db0ef5c9"
-      );
+      const owner = await Mytoken.mintTokenOnBlockchain("");
       let owner1 = await Mytoken.ownerOf(1);
-      console.log(owner1);
+      console.log(owner1.toString());
       owner1 = await Mytoken.ownerOf(2);
       console.log(owner1);
+      console.log();
     });
   });
 });

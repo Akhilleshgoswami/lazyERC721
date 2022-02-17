@@ -1,8 +1,10 @@
+
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 contract Mytoken is ERC721, Ownable {
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -14,16 +16,14 @@ contract Mytoken is ERC721, Ownable {
 
     constructor() ERC721("Mytoken", "MTK") {}
 
-    event mintNft(address owner, address seller, uint256 tokenId);
+    event transferNft(address owner, address seller, uint256 tokenId);
 
-    /**
-     *
-     * function check - it is used to check the signature of the user .
-     * {param} signature - it the user signature  .
+    /*
+     *  function check - it is used to check the signature of the user .
+     *  {param} signature - it the user signature  .
      *  {param} tokenUri  - it is the IPFS hash of the token .
-     * returns -  singer wallate Address
-     *
-     */
+	 *  returns -  singer wallate Address
+     **/
 
     function check(
         bytes memory signature,
@@ -32,7 +32,7 @@ contract Mytoken is ERC721, Ownable {
         return _getsignerAddress(signature,tokenUri);
     }
 
-    /***
+    /**
      * function _setTokenURI - It is used to set the URI of NFT.
      * {Param} tokenId - It is the Token Id of NFT.
      * {param} _tokenURI - It is the IPFS URI of the NFT.
@@ -84,8 +84,7 @@ contract Mytoken is ERC721, Ownable {
         return string(abi.encodePacked(base, tokenId.toString()));
     }
 
-    /**
-     *
+    /*
      * function buyToken  - It the function to buy The lazy NFT.
      * {param}  buyer -  wallate address of the buyer.
      * {param} price - price of the NFT.
@@ -93,60 +92,53 @@ contract Mytoken is ERC721, Ownable {
      * {param} signature -  The   keccak256 of signer.
      *
      * **/
-    function buyToken(
+    function buyLazyToken(
         address buyer,
         uint256 price,
         string memory uri,
         bytes memory signature
-    )  public  payable returns (uint256) {
-        //the value must be greate then or eqaul to the price
-        require(msg.value >= price, "Insufficient funds to redeem");
-        // address must not be null
+    )  public  payable  returns (uint256){
+      require(msg.value >= price,"please give a proper price");
+	  require(price > 0,"price must be > 0");
         address saller = check(signature, uri);
-        require(
-            (buyer != address(0) && saller != address(0)),
-            "you can not mint for null address"
-        );
-        tokendIds.increment();
-        uint256 tokenId = tokendIds.current();
-        // first assign the token to the signer, to establish provenance on-chain.
-        _mint(saller, tokenId);
-        //set the token URI.
-        _setTokenURI(tokenId, uri);
+        _mintNFt(saller,uri); 
         // transfer token to buyer.
-        _transfer(saller, buyer, tokenId);
-        // paying the owner of the lazy NFT.
-        payable(saller).transfer(price);
-        emit mintNft(buyer, saller, price);
-
-        return tokenId;
+        _transferNft(buyer,saller,price,tokendIds.current());
+        return tokendIds.current();
     }
-
-    /**
+/**
+*function - will transfer a minted nft on blokchain 
+*`buyer` - wallat address
+*`price` - nft value.
+*`tokenId` - nft tokendId
+**/
+function buyMintedToken(
+       address buyer,
+       uint256 price,
+       uint256 tokenId
+	)  public payable {
+      require(msg.value >= price,"please give a proper price");
+	  require(price > 0,"price must be > 0");
+       address saller =  ownerOf(tokenId);
+      _transferNft(buyer,saller,price,tokenId); 
+	}
+    /**:
      * function - this function directly mint the Token.
      * {param} URI - IPFS URL of The Token.
      * {param} minter - eth address of the minter.
      */
-    function mintToken(
-        string memory URI,
-        address minter
-    ) public returns (uint256) {
-        require(minter != address(0), "you can not mint for null address");
-        tokendIds.increment();
-        uint256 tokenId = tokendIds.current();
+    function mintTokenOnBlockchain(
+        string memory URI
+         ) public returns (uint256) {
         //mint the NFT.
-        _mint(minter, tokenId);
-        //set the token URI.
-        _setTokenURI(tokenId, URI);
-        return tokenId;
+		_mintNFt(_msgSender(),URI);
+        return tokendIds.current();
     }
 
-    /**
-     * {param}  _signature - keccak256 hash.
+    /* {param}  _signature - keccak256 hash.
      * {param} _url - IPFS url of the Token.
      * returns  - the eth address of signer.
-     *
-     * **/
+     */
 
     function _getsignerAddress(
         bytes memory _signature,
@@ -160,7 +152,26 @@ contract Mytoken is ERC721, Ownable {
         address signer = messagehash.toEthSignedMessageHash().recover(
             _signature
         );
-
         return signer;
     }
+ // internal functions 
+	function _transferNft(address _buyer,address _saller,uint256 _price,uint256 _tokenId)internal {
+      require(_buyer!= address(0) && _saller != address(0),"you can not transfer") ;
+         // transfer token to buyer.
+           _transfer(_saller, _buyer, _tokenId);
+        // paying the owner of the lazy NFT.
+      payable(_saller).transfer(_price);
+
+      emit transferNft(_buyer, _saller, _price);
+	}
+
+	function _mintNFt(address _owner,string memory _URI)internal{
+	 require(bytes(_URI).length> 0,"URI can not be null");
+     require(_owner != address(0),"you can not mint NFT on null address") ;
+        tokendIds.increment();
+        uint256 _tokenId = tokendIds.current();
+		_mint(_owner, _tokenId);
+        _setTokenURI(_tokenId, _URI);
+
+	}
 }
