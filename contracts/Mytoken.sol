@@ -5,7 +5,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-contract Mytoken is ERC721, Ownable {
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+contract Mytoken is ERC721, Ownable,ReentrancyGuard {
     using Strings for uint256;
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
@@ -20,8 +21,8 @@ contract Mytoken is ERC721, Ownable {
 
     /*
      *  function check - it is used to check the signature of the user .
-     *  {param} signature - it the user signature  .
-     *  {param} tokenUri  - it is the IPFS hash of the token .
+     *  ` signature` - it the user signature  .
+     *  ` tokenUri`  - it is the IPFS hash of the token .
 	 *  returns -  singer wallate Address
      **/
 
@@ -34,8 +35,8 @@ contract Mytoken is ERC721, Ownable {
 
     /**
      * function _setTokenURI - It is used to set the URI of NFT.
-     * {Param} tokenId - It is the Token Id of NFT.
-     * {param} _tokenURI - It is the IPFS URI of the NFT.
+     * ` tokenId` - It is the Token Id of NFT.
+     * ` _tokenURI` - It is the IPFS URI of the NFT.
      * */
     function _setTokenURI(uint256 tokenId, string memory _tokenURI)
         internal
@@ -53,7 +54,7 @@ contract Mytoken is ERC721, Ownable {
     }
 
     /**
-     * {param} - tokendId - It is the Token Id of the Tokend.
+     * `tokendId` - It is the Token Id of the Tokend.
      *  returns - return the TokenURI.
      * */
     function tokenURI(uint256 tokenId)
@@ -86,18 +87,17 @@ contract Mytoken is ERC721, Ownable {
 
     /*
      * function buyToken  - It the function to buy The lazy NFT.
-     * {param}  buyer -  wallate address of the buyer.
-     * {param} price - price of the NFT.
-     * {param} uri - The IPFS URL of the NFT.
-     * {param} signature -  The   keccak256 of signer.
-     *
-     * **/
+     * `  buyer` -  wallate address of the buyer.
+     * ` price` - price of the NFT.
+     * ` uri` - The IPFS URL of the NFT.
+     * `signature` -  The   keccak256 of signer.
+	*/
     function buyLazyToken(
         address buyer,
         uint256 price,
         string memory uri,
         bytes memory signature
-    )  public  payable  returns (uint256){
+    )  public  payable nonReentrant returns (uint256){
       require(msg.value >= price,"please give a proper price");
 	  require(price > 0,"price must be > 0");
         address saller = check(signature, uri);
@@ -106,7 +106,7 @@ contract Mytoken is ERC721, Ownable {
         _transferNft(buyer,saller,price,tokendIds.current());
         return tokendIds.current();
     }
-/**
+/*
 *function - will transfer a minted nft on blokchain 
 *`buyer` - wallat address
 *`price` - nft value.
@@ -116,7 +116,7 @@ function buyMintedToken(
        address buyer,
        uint256 price,
        uint256 tokenId
-	)  public payable {
+	)  public payable nonReentrant {
       require(msg.value >= price,"please give a proper price");
 	  require(price > 0,"price must be > 0");
        address saller =  ownerOf(tokenId);
@@ -124,19 +124,19 @@ function buyMintedToken(
 	}
     /**:
      * function - this function directly mint the Token.
-     * {param} URI - IPFS URL of The Token.
-     * {param} minter - eth address of the minter.
+     *`URI` - IPFS URL of The Token.
+     * `minter` - eth address of the minter.
      */
     function mintTokenOnBlockchain(
         string memory URI
-         ) public returns (uint256) {
+         ) public nonReentrant returns (uint256) {
         //mint the NFT.
 		_mintNFt(_msgSender(),URI);
         return tokendIds.current();
     }
 
-    /* {param}  _signature - keccak256 hash.
-     * {param} _url - IPFS url of the Token.
+    /*  `_signature` - keccak256 hash.
+     *  `_url` - IPFS url of the Token.
      * returns  - the eth address of signer.
      */
 
