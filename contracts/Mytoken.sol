@@ -1,4 +1,3 @@
-
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -96,11 +95,11 @@ contract Mytoken is ERC721, Ownable,ReentrancyGuard {
         address buyer,
         uint256 price,
         string memory uri,
-        bytes memory signature
+        bytes memory signature,string memory  message
     )  public  payable nonReentrant returns (uint256){
       require(msg.value >= price,"please give a proper price");
 	  require(price > 0,"price must be > 0");
-        address saller = check(signature, uri);
+        address saller = check(signature, message);
         _mintNFt(saller,uri); 
         // transfer token to buyer.
         _transferNft(buyer,saller,price,tokendIds.current());
@@ -143,7 +142,7 @@ function buyMintedToken(
     function _getsignerAddress(
         bytes memory _signature,
         string memory _url
-    ) internal view returns (address) {
+    ) public view returns (address) {
         bytes32 messagehash = keccak256(
             //in production _url is going to change with contract address
             abi.encodePacked(address(this),_url)
